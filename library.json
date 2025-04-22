@@ -1,0 +1,74 @@
+{
+    "name": "pico-ble-secure",
+    "version": "1.0.0",
+    "description": "A library for implementing secure Bluetooth Low Energy (BLE) pairing and encryption on Raspberry Pi Pico using the arduino-pico core",
+    "keywords": "bluetooth, BLE, security, pairing, encryption, Pico, arduino-pico, secure connections, MITM protection",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/IoT-gamer/pico-ble-secure.git"
+    },
+    "authors": [
+      {
+        "name": "Sean P. Leary",
+        "email": "sunrecorder1@gmail.com",
+        "maintainer": true
+      }
+    ],
+    "license": "MIT",
+    "homepage": "https://github.com/IoT-gamer/pico-ble-secure",
+    "dependencies": {
+      "earlephilhower/arduino-pico": ">=4.0.0"
+    },
+    "frameworks": "arduino",
+    "platforms": "raspberrypi",
+    "examples": [
+      {
+        "name": "SecurePairingMedium",
+        "base": "examples/SecurePairingMedium",
+        "files": [
+          "src/main.cpp"
+        ]
+      },
+      {
+        "name": "SecurePairingHigh",
+        "base": "examples/SecurePairingHigh",
+        "files": [
+          "src/main.cpp"
+        ]
+      },
+      {
+        "name": "SecurePairingHighSC",
+        "base": "examples/SecurePairingHighSC",
+        "files": [
+          "src/main.cpp"
+        ]
+      }
+    ],
+    "export": {
+        "exclude": [
+          "examples/SecurePairingHigh/.pio",
+          "examples/SecurePairingHigh/.vscode/.browse.c_cpp.db*",
+          "examples/SecurePairingHigh/.vscode/c_cpp_properties.json",
+          "examples/SecurePairingHigh/.vscode/launch.json",
+          "examples/SecurePairingHigh/.vscode/ipch",
+          "examples/SecurePairingHigh/logs/",
+          "examples/SecurePairingHighSC/.pio",
+          "examples/SecurePairingHighSC/.vscode/.browse.c_cpp.db*",
+          "examples/SecurePairingHighSC/.vscode/c_cpp_properties.json",
+          "examples/SecurePairingHighSC/.vscode/launch.json",
+          "examples/SecurePairingHighSC/.vscode/ipch",
+          "examples/SecurePairingHighSC/logs/",
+          "examples/SecurePairingMedium/.pio",
+          "examples/SecurePairingMedium/.vscode/.browse.c_cpp.db*",
+          "examples/SecurePairingMedium.vscode/c_cpp_properties.json",
+          "examples/SecurePairingMedium/.vscode/launch.json",
+          "examples/SecurePairingMedium/.vscode/ipch",
+          "examples/SecurePairingMedium/logs/",
+          ".git",
+          ".github",
+          "*.sh",
+          "*.yml",
+          "*.tar.gz"
+        ]
+      }
+  }
