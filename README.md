@@ -64,6 +64,14 @@ lib_deps =
 - Raspberry Pi Pico W or Pico 2 W
 - [Arduino-pico core](https://github.com/earlephilhower/arduino-pico) with BTstack support
 
+## Optional Hardware
+- I2C/SPI display for showing passkeys
+- Buttons for user input (e.g., confirming numeric comparison)
+  - Can use onboard [BOOTSEL button](https://arduino-pico.readthedocs.io/en/latest/bootsel.html)
+- LEDs for visual feedback during pairing
+  - Can use onboard LED
+- Keypad or other input methods for entering passkeys
+
 ## Usage
 
 ### Basic Setup
