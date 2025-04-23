@@ -1,6 +1,6 @@
 {
     "name": "pico-ble-secure",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "A library for implementing secure Bluetooth Low Energy (BLE) pairing and encryption on Raspberry Pi Pico using the arduino-pico core",
     "keywords": "bluetooth, BLE, security, pairing, encryption, Pico, arduino-pico, secure connections, MITM protection",
     "repository": {
