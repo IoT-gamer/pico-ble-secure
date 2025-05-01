@@ -271,9 +271,9 @@ This behavior is common in BLE development and not specific to this library. Any
 
 ## Migration Guide
 
-### Version 1.X to 2.X
+### Version 1.0.1 to 1.1.0
 
-The 2.X version introduces a new way to handle connection events and automatic pairing. Here are the key changes:
+Version 1.1.0 introduces a new way to handle connection events and automatic pairing. Here are the key changes:
 
 1. **Connection Callbacks**: Register connection and disconnection callbacks through BLESecure instead of BTstack:
    ```cpp
