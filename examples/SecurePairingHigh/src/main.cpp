@@ -25,20 +25,20 @@
  
  // Callbacks for BLE events
  void bleDeviceConnected(BLEStatus status, BLEDevice* device) {
-   if (status == BLE_STATUS_OK) {
-     Serial.println("Device connected!");
-     deviceConnected = true;
-     connectedDevice = device;
-     
-     // Manually request pairing
-     if (BLESecure._requestPairingOnConnect) {
-       BLESecure.requestPairing(device);
-     }
-   } else {
-     Serial.print("Connection failed with status: ");
-     Serial.println(status);
-   }
- }
+  if (status == BLE_STATUS_OK) {
+    Serial.println("Device connected!");
+    deviceConnected = true;
+    connectedDevice = device;
+    
+    // No need to manually check BLESecure._requestPairingOnConnect
+    // or call BLESecure.requestPairing() here
+    // The BLESecure library now handles this automatically
+    
+  } else {
+    Serial.print("Connection failed with status: ");
+    Serial.println(status);
+  }
+} 
  
  void bleDeviceDisconnected(BLEDevice* device) {
    Serial.println("Device disconnected!");
@@ -144,8 +144,9 @@
    BLESecure.setNumericComparisonCallback(onNumericComparison);
    
    // Register callbacks for BLE connection events
-   BTstack.setBLEDeviceConnectedCallback(bleDeviceConnected);
-   BTstack.setBLEDeviceDisconnectedCallback(bleDeviceDisconnected);
+   BLESecure.setBLEDeviceConnectedCallback(bleDeviceConnected);
+   BLESecure.setBLEDeviceDisconnectedCallback(bleDeviceDisconnected);
+
    
    // Register GATT write callback
    BTstack.setGATTCharacteristicWrite(gattWriteCallback);

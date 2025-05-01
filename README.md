@@ -30,6 +30,7 @@ This library extends the functionality of the arduino-pico core's BTstack implem
   - Receive notifications for all pairing events
   - Display pairing codes
   - Confirm pairing with numeric comparison
+  - Automatic pairing management through connection callbacks
 
 ## Installation
 
@@ -81,6 +82,19 @@ lib_deps =
 #include <BTstackLib.h>
 #include <BLESecure.h>
 
+// Callbacks for BLE events
+void bleDeviceConnected(BLEStatus status, BLEDevice* device) {
+  if (status == BLE_STATUS_OK) {
+    Serial.println("Device connected!");
+    // No need to manually call BLESecure.requestPairing() here
+    // It's automatically handled if requestPairingOnConnect is enabled
+  }
+}
+
+void bleDeviceDisconnected(BLEDevice* device) {
+  Serial.println("Device disconnected!");
+}
+
 void setup() {
   Serial.begin(115200);
   
@@ -96,6 +110,10 @@ void setup() {
   // Request pairing automatically when a device connects
   BLESecure.requestPairingOnConnect(true);
   
+  // Register connection callbacks through BLESecure (not BTstack)
+  BLESecure.setBLEDeviceConnectedCallback(bleDeviceConnected);
+  BLESecure.setBLEDeviceDisconnectedCallback(bleDeviceDisconnected);
+  
   // Start advertising
   BTstack.startAdvertising();
 }
@@ -107,6 +125,18 @@ void loop() {
   delay(10);
 }
 ```
+
+### Connection Management
+
+Register connection and disconnection callbacks through BLESecure instead of directly through BTstack:
+
+```cpp
+// Register callbacks through BLESecure for automatic pairing management
+BLESecure.setBLEDeviceConnectedCallback(bleDeviceConnected);
+BLESecure.setBLEDeviceDisconnectedCallback(bleDeviceDisconnected);
+```
+
+This allows the BLESecure library to automatically handle pairing requests based on your `requestPairingOnConnect` setting.
 
 ### Setting Up Security Level
 
@@ -170,6 +200,46 @@ void setup() {
 }
 ```
 
+## Migration Guide
+
+### Version 1.X to 2.X
+
+The 2.X version introduces a new way to handle connection events and automatic pairing. Here are the key changes:
+
+1. **Connection Callbacks**: Register connection and disconnection callbacks through BLESecure instead of BTstack:
+   ```cpp
+   // Old way:
+   BTstack.setBLEDeviceConnectedCallback(bleDeviceConnected);
+   BTstack.setBLEDeviceDisconnectedCallback(bleDeviceDisconnected);
+   
+   // New way:
+   BLESecure.setBLEDeviceConnectedCallback(bleDeviceConnected);
+   BLESecure.setBLEDeviceDisconnectedCallback(bleDeviceDisconnected);
+   ```
+
+2. **Automatic Pairing**: When `requestPairingOnConnect(true)` is set, pairing is now automatically initiated when a device connects. You no longer need to manually check the flag and call `requestPairing()` in your connection callback:
+   ```cpp
+   // Old way:
+   void bleDeviceConnected(BLEStatus status, BLEDevice* device) {
+     if (status == BLE_STATUS_OK) {
+       // Manually check and request pairing
+       if (BLESecure._requestPairingOnConnect) {
+         BLESecure.requestPairing(device);
+       }
+     }
+   }
+   
+   // New way:
+   void bleDeviceConnected(BLEStatus status, BLEDevice* device) {
+     if (status == BLE_STATUS_OK) {
+       // Pairing is automatically handled if enabled
+       // No manual check needed
+     }
+   }
+   ```
+
+These changes simplify the code required to implement secure BLE connections and ensure consistent behavior across applications.
+
 ## Examples
 
 The library includes several example platformIO projects demonstrating its usage:
@@ -210,11 +280,16 @@ The library includes several example platformIO projects demonstrating its usage
 
 #### Pairing Control
 
-- `void requestPairingOnConnect(bool enable)`: Request pairing when a device connects
+- `void requestPairingOnConnect(bool enable)`: Request pairing automatically when a device connects
 - `bool requestPairing(BLEDevice* device)`: Manually request pairing with a connected device
 - `bool bondWithDevice(BLEDevice* device)`: Bond with a device (store keys for reconnection)
 - `bool removeBonding(BLEDevice* device)`: Remove bonding information for a device
 - `void clearAllBondings()`: Remove all stored bonding information
+
+#### Connection Management
+
+- `void setBLEDeviceConnectedCallback(void (*callback)(BLEStatus status, BLEDevice* device))`: Register callback for device connection events
+- `void setBLEDeviceDisconnectedCallback(void (*callback)(BLEDevice* device))`: Register callback for device disconnection events
 
 #### Callback Registration
 
@@ -249,4 +324,3 @@ Contributions to improve the library are welcome! Please submit pull requests or
 
 ## Acknowledgements and Credits
 This library is based on the [BTstackLib](https://github.com/earlephilhower/arduino-pico/tree/master/libraries/BTstackLib) library for Arduino-Core and Raspberry Pi Pico. Special thanks to the BTstack developers for their work on BLE stack implementation and arduino-pico core maintainers.
-```

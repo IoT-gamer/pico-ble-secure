@@ -95,6 +95,12 @@
      // Process security manager events - should be called from the main event handler
      void handleSMEvent(uint8_t packet_type, uint16_t channel, uint8_t* packet, uint16_t size);
      
+     // Method to register connection callback that also handles auto-pairing
+     void setBLEDeviceConnectedCallback(void (*callback)(BLEStatus status, BLEDevice* device));
+     
+     // Method to register disconnection callback
+     void setBLEDeviceDisconnectedCallback(void (*callback)(BLEDevice* device));
+     
      // Flag to indicate if pairing should be automatically requested on connect
      bool _requestPairingOnConnect;
      
@@ -112,11 +118,21 @@
      void (*_pairingStatusCallback)(BLEPairingStatus status, BLEDevice* device);
      void (*_numericComparisonCallback)(uint32_t passkey, BLEDevice* device);
      
+     // Connection and disconnection callbacks
+     void (*_userConnectedCallback)(BLEStatus status, BLEDevice* device);
+     void (*_userDisconnectedCallback)(BLEDevice* device);
+     
      // Store the current device handle for callbacks
      hci_con_handle_t _currentDeviceHandle;
      
      // Register for Security Manager events
      void setupSMEventHandler();
+     
+     // Internal connection callback that handles auto-pairing
+     static void internalConnectionCallback(BLEStatus status, BLEDevice* device);
+     
+     // Internal disconnection callback
+     static void internalDisconnectionCallback(BLEDevice* device);
  };
  
  extern BLESecureClass BLESecure;

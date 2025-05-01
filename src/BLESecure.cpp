@@ -27,6 +27,8 @@
      _passkeyEntryCallback(nullptr),
      _pairingStatusCallback(nullptr),
      _numericComparisonCallback(nullptr),
+     _userConnectedCallback(nullptr),
+     _userDisconnectedCallback(nullptr),
      _currentDeviceHandle(HCI_CON_HANDLE_INVALID),
      _bondingEnabled(true)
  {
@@ -104,9 +106,6 @@
  
  void BLESecureClass::requestPairingOnConnect(bool enable) {
      _requestPairingOnConnect = enable;
-     
-     // Note: We can't directly access BluetoothHCI's protected method setPairOnMeta
-     // The user will need to manually call requestPairing in the connection callback
  }
  
  bool BLESecureClass::requestPairing(BLEDevice* device) {
@@ -242,6 +241,45 @@
      static btstack_packet_callback_registration_t sm_event_callback_registration;
      sm_event_callback_registration.callback = SMEVENTCB(BLESecureClass, handleSMEvent);
      sm_add_event_handler(&sm_event_callback_registration);
+ }
+
+ // New methods for connection/disconnection handling with auto-pairing
+ void BLESecureClass::setBLEDeviceConnectedCallback(void (*callback)(BLEStatus status, BLEDevice* device)) {
+     _userConnectedCallback = callback;
+     BTstack.setBLEDeviceConnectedCallback(internalConnectionCallback);
+ }
+
+ void BLESecureClass::setBLEDeviceDisconnectedCallback(void (*callback)(BLEDevice* device)) {
+     _userDisconnectedCallback = callback;
+     BTstack.setBLEDeviceDisconnectedCallback(internalDisconnectionCallback);
+ }
+
+ // Internal connection callback that handles auto-pairing
+ void BLESecureClass::internalConnectionCallback(BLEStatus status, BLEDevice* device) {
+     // Auto-request pairing if enabled
+     if (status == BLE_STATUS_OK && BLESecure._requestPairingOnConnect) {
+         Serial.println("Auto-requesting pairing as configured in BLESecure");
+         BLESecure.requestPairing(device);
+     }
+     
+     // Call the user's callback if registered
+     if (BLESecure._userConnectedCallback) {
+         BLESecure._userConnectedCallback(status, device);
+     }
+ }
+
+ // Internal disconnection callback
+ void BLESecureClass::internalDisconnectionCallback(BLEDevice* device) {
+     // Reset pairing status if this was the device we were pairing with
+     if (BLESecure._currentDeviceHandle == device->getHandle()) {
+         BLESecure._pairingStatus = PAIRING_IDLE;
+         BLESecure._currentDeviceHandle = HCI_CON_HANDLE_INVALID;
+     }
+     
+     // Call the user's callback if registered
+     if (BLESecure._userDisconnectedCallback) {
+         BLESecure._userDisconnectedCallback(device);
+     }
  }
  
  void BLESecureClass::handleSMEvent(uint8_t packet_type, uint16_t channel, uint8_t* packet, uint16_t size) {
