@@ -200,6 +200,75 @@ void setup() {
 }
 ```
 
+## Handling Re-encryption Failures
+
+### Problem
+
+When a Pico device has been bonded with a central device (like a smartphone) and then the Pico is flashed with new firmware, the following error sequence may occur when attempting to reconnect:
+
+```
+Re-encryption started with bonded device
+Pairing started
+Re-encryption failed, status: 61
+Pairing failed
+```
+
+This occurs because:
+1. The central device (smartphone) still has the bonding information
+2. The Pico has lost all bonding data after being flashed
+3. The central device attempts to use the old bonding keys to re-establish a secure connection
+4. The pairing fails because the Pico no longer recognizes these keys
+
+### Solutions
+
+There are several approaches to handle this situation:
+
+#### Option 1: Remove Bonding on Central Device
+
+The simplest approach for development is to remove the bonded device from your smartphone/central device:
+
+- **On Android**: Go to Settings → Bluetooth → Previously Connected Devices → Tap the gear or arrow icon next to your device → "Forget" or "Unpair"
+- **On iOS**: Go to Settings → Bluetooth → Tap the "i" next to your device → "Forget This Device"
+
+#### Option 2: Implement Persistent Bonding Storage
+
+For production devices, consider implementing persistent storage of bonding information:
+- Store bonding keys in flash memory (e.g., using the LittleFS on Pico)
+- Restore bonding information after firmware updates
+- See the [arduino-pico documentation](https://arduino-pico.readthedocs.io/en/latest/fs.html) for file system usage
+
+#### Option 3: Clear Bond on Reconnection Failure
+
+Implement automatic bond clearing after a failed reconnection attempt:
+
+```cpp
+// In your onPairingStatus callback
+void onPairingStatus(BLEPairingStatus status, BLEDevice *device) {
+  switch (status) {
+    case PAIRING_FAILED:
+      Serial.println("Pairing failed - attempting to clear existing bond");
+      // In a real application, you might want to:
+      // 1. Request the central device to forget the bond
+      // 2. Try a fresh pairing after a delay
+      
+      // For now, we can just disconnect to force a fresh connection
+      if (device) {
+        gap_disconnect(device->getHandle());
+      }
+      break;
+    // Other cases...
+  }
+}
+```
+
+### Recommendation for Development
+
+During development, use Option 1 (removing the bond on the central device) for simplicity. For production devices, consider implementing a more robust solution with persistent storage (Option 2).
+
+### Important Note
+
+This behavior is common in BLE development and not specific to this library. Any time bonding information is lost on either the peripheral or central device, re-encryption will fail, and the bond must be reestablished.
+
 ## Migration Guide
 
 ### Version 1.X to 2.X
