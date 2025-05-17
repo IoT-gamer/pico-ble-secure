@@ -186,35 +186,64 @@ bool BLESecureClass::bondWithDevice(BLEDevice *device)
     return result;
 }
 
-bool BLESecureClass::removeBonding(BLEDevice *device)
-{
-    if (!device)
-        return false;
-
-    hci_con_handle_t handle = device->getHandle();
-    if (handle == HCI_CON_HANDLE_INVALID)
-        return false;
-
-    BluetoothLock b;
-
-    // Try to get the device index from the Security Manager
-    int device_db_index = sm_le_device_index(handle);
-    if (device_db_index < 0)
-    {
-        Serial.println("No bonding info found for this device");
+bool BLESecureClass::removeBonding(BLEDevice *device) {
+    if (!device) {
+        Serial.println("removeBonding: BLEDevice object is NULL.");
         return false;
     }
 
-    // We can't directly call le_device_db_remove as it might not be exposed
-    // but we can log the information for debugging
-    Serial.print("Found device at index: ");
+    hci_con_handle_t handle = device->getHandle();
+    if (handle == HCI_CON_HANDLE_INVALID) {
+        Serial.println("removeBonding: Invalid connection handle from BLEDevice.");
+        return false;
+    }
+
+    Serial.println("Attempting to remove bonding for specific device.");
+    BluetoothLock b;
+
+    int device_db_index = sm_le_device_index(handle);
+
+    if (device_db_index < 0) {
+        Serial.print("removeBonding: Device not found in LE Device DB (sm_le_device_index returned ");
+        Serial.print(device_db_index);
+        Serial.println("). Cannot get address to remove bond. It might not be bonded or not connected.");
+        return false;
+    }
+
+    Serial.print("removeBonding: Found device in LE DB at index: ");
     Serial.println(device_db_index);
-    Serial.println("Note: Full removeBonding() implementation requires access to le_device_db functions");
 
-    // For now, we'll just disconnect which should help in some cases
-    gap_disconnect(handle);
+    int addr_type_int;
+    bd_addr_t addr;
+    le_device_db_info(device_db_index, &addr_type_int, addr, NULL /* irk */);
+    bd_addr_type_t current_addr_type = (bd_addr_type_t)addr_type_int;
 
-    return true;
+    if (current_addr_type == BD_ADDR_TYPE_LE_PUBLIC || current_addr_type == BD_ADDR_TYPE_LE_RANDOM) {
+        Serial.print("removeBonding: Calling gap_delete_bonding for AddrType: ");
+        Serial.print(current_addr_type);
+        Serial.print(", Addr: ");
+        Serial.println(bd_addr_to_str(addr));
+
+        gap_delete_bonding(current_addr_type, addr); 
+
+        Serial.println("removeBonding: gap_delete_bonding called. Verifying DB state:");
+        le_device_db_dump(); 
+
+        int current_db_count = le_device_db_count();
+        Serial.print("removeBonding: le_device_db_count() after gap_delete_bonding: ");
+        Serial.println(current_db_count);
+
+
+        Serial.println("removeBonding: Disconnecting device.");
+        gap_disconnect(handle); 
+
+        return true; 
+    } else {
+        Serial.print("removeBonding: Could not retrieve a valid LE address type for device at DB index ");
+        Serial.print(device_db_index);
+        Serial.print(" (type was "); Serial.print(current_addr_type); Serial.println("). Bond not removed.");
+        return false;
+    }
 }
 
 void BLESecureClass::clearAllBondings() {
