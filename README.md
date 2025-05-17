@@ -316,6 +316,7 @@ The library includes several example platformIO projects demonstrating its usage
 - **SecurePairingMedium**: Basic encryption without MITM protection using the "Just Works" method
 - **SecurePairingHigh**: Encryption with MITM protection using passkey or numeric comparison
 - **SecurePairingHighSC**: The highest security level using Secure Connections
+- **ClearBondingTest**: Clears bonding information in flash memory via BOOTSEL button press
 
 ### Test with nRF Connect mobile app
 - connect pico-W to computer with USB

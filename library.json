@@ -42,6 +42,13 @@
         "files": [
           "src/main.cpp"
         ]
+      },
+      {
+        "name": "ClearBondingTest",
+        "base": "examples/ClearBondingTest",
+        "files": [
+          "src/main.cpp"
+        ]
       }
     ],
     "export": {
@@ -60,10 +67,16 @@
           "examples/SecurePairingHighSC/logs/",
           "examples/SecurePairingMedium/.pio",
           "examples/SecurePairingMedium/.vscode/.browse.c_cpp.db*",
-          "examples/SecurePairingMedium.vscode/c_cpp_properties.json",
+          "examples/SecurePairingMedium/.vscode/c_cpp_properties.json",
           "examples/SecurePairingMedium/.vscode/launch.json",
           "examples/SecurePairingMedium/.vscode/ipch",
           "examples/SecurePairingMedium/logs/",
+          "examples/ClearBondingTest/.pio",
+          "examples/ClearBondingTest/.vscode/.browse.c_cpp.db*",
+          "examples/ClearBondingTest/.vscode/c_cpp_properties.json",
+          "examples/ClearBondingTest/.vscode/launch.json",
+          "examples/ClearBondingTest/.vscode/ipch",
+          "examples/ClearBondingTest/logs/",
           ".git",
           ".github",
           "*.sh",

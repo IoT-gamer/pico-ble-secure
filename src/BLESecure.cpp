@@ -7,6 +7,22 @@
 #include "BLESecure.h"
 #include "BluetoothLock.h"
 
+// Core BTstack headers for LE Device DB and GAP
+#include "ble/le_device_db.h" 
+// #include "gap.h" // included in BLESecure.h              
+#include "hci.h" // For hci_con_handle_t
+
+// Fallback if NVM_NUM_DEVICE_DB_ENTRIES is not directly available here.
+// It's defined in btstack_config.h as 16.
+#ifndef NVM_NUM_DEVICE_DB_ENTRIES
+#define NVM_NUM_DEVICE_DB_ENTRIES 16
+#endif
+
+// Ensure BD_ADDR_TYPE_UNKNOWN is defined, it's usually 0xff in BTstack
+#ifndef BD_ADDR_TYPE_UNKNOWN
+#define BD_ADDR_TYPE_UNKNOWN 0xff
+#endif
+
 // Define the callback macros for handling btstack events with C++ class methods
 #define CCALLBACKNAME _BLESECURECB
 #include <ctocppcallback.h>
@@ -201,14 +217,63 @@ bool BLESecureClass::removeBonding(BLEDevice *device)
     return true;
 }
 
-void BLESecureClass::clearAllBondings()
-{
+void BLESecureClass::clearAllBondings() {
+    Serial.println(">>> Using gap_delete_bonding w/ Dumps <<<"); 
     BluetoothLock b;
 
-    // The arduino-pico implementation doesn't have a function to delete all bondings at once
-    // We would need access to the le_device_db functions which might not be exposed
+    Serial.println("Initial LE Device DB Dump (before any deletions):");
+    le_device_db_dump(); // DUMP 1: See initial state
 
-    Serial.println("Note: clearAllBondings() would require access to le_device_db functions");
+    int initial_bond_count = le_device_db_count();
+    Serial.print("Found ");
+    Serial.print(initial_bond_count);
+    Serial.println(" bonded device(s) reported by le_device_db_count(). Attempting to delete via GAP API...");
+
+    if (initial_bond_count > 0) {
+        int bonds_deleted_count = 0;
+        // Iterate through all possible physical slots in the LE Device DB
+        for (int slot_index = 0; slot_index < NVM_NUM_DEVICE_DB_ENTRIES; ++slot_index) {
+            int addr_type_int;
+            bd_addr_t addr;
+
+            // Get info for the bond potentially at physical slot 'slot_index'
+            le_device_db_info(slot_index, &addr_type_int, addr, NULL /* irk */);
+            bd_addr_type_t current_addr_type = (bd_addr_type_t)addr_type_int;
+
+            // Check if the slot contains a valid LE bond entry
+            // Valid LE public or random addresses. BD_ADDR_TYPE_UNKNOWN (0xff) means empty.
+            if (current_addr_type == BD_ADDR_TYPE_LE_PUBLIC || current_addr_type == BD_ADDR_TYPE_LE_RANDOM) {
+                Serial.print("Slot "); Serial.print(slot_index);
+                Serial.print(": Found valid LE device to delete - AddrType: "); Serial.print(current_addr_type);
+                Serial.print(", Addr: "); Serial.println(bd_addr_to_str(addr));
+
+                gap_delete_bonding(current_addr_type, addr);
+                bonds_deleted_count++;
+                Serial.println("Called gap_delete_bonding(). DB state after this call (dump may not reflect immediate flash change):");
+                le_device_db_dump(); // DUMP 2: Inside loop, after a gap_delete_bonding call
+            }
+        }
+        Serial.print("Called gap_delete_bonding() for ");
+        Serial.print(bonds_deleted_count);
+        Serial.println(" potential entries based on initial scan of all slots.");
+    } else {
+        Serial.println("No bonds reported by le_device_db_count() initially.");
+    }
+
+    Serial.println("Final LE Device DB Dump (after all gap_delete_bonding attempts):");
+    le_device_db_dump(); // DUMP 3: After the loop
+
+    int final_count = le_device_db_count();
+    if (final_count == 0) {
+        Serial.println("SUCCESS: All bondings appear cleared (le_device_db_count is 0).");
+    } else {
+        Serial.print("INFO: After all attempts, ");
+        Serial.print(final_count);
+        Serial.println(" bond(s) still reported by le_device_db_count. Initial count was " + String(initial_bond_count));
+        Serial.println("This might indicate that gap_delete_bonding did not fully clear all entries from SM perspective or TLV backend.");
+    }
+    // The re-application of SM settings will be handled by BLESecure.begin()/setSecurityLevel()
+    // called from the main.cpp's BOOTSEL logic AFTER this function returns.
 }
 
 void BLESecureClass::setPasskeyDisplayCallback(void (*callback)(uint32_t passkey))
